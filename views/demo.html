@@ -10,6 +10,8 @@
   <style>
     video,
     canvas {
+      width: 500px;
+      height: 500px;
       position: absolute;
       top: 0;
       left: 0;
@@ -18,13 +20,9 @@
 </head>
 
 <body>
-  <div class="center-content page-container">
-    <div style="position: relative" class="margin">
-      <video onloadedmetadata="onPlay(this)" id="inputVideo" autoplay muted></video>
-      <canvas id="overlay" />
-    </div>
+  <video onloadedmetadata="onPlay(this)" id="inputVideo" autoplay muted></video>
+  <canvas id="overlay"></canvas>
 </body>
-
 <script>
   let flag = true; //是否显示人脸框
   async function onPlay() {
@@ -75,6 +73,5 @@
     run()
   })
 </script>
-</body>
 
 </html>
