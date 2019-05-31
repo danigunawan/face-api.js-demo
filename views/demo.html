@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="../dist/face-api.js"></script>
+  <script src="../public/js/commons.js"></script>
+  <script src="../public/js/faceDetectionControls.js"></script>
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+  <style>
+    video,
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="center-content page-container">
+    <div style="position: relative" class="margin">
+      <video onloadedmetadata="onPlay(this)" id="inputVideo" autoplay muted></video>
+      <canvas id="overlay" />
+    </div>
+</body>
+
+<script>
+  let flag = true; //是否显示人脸框
+  async function onPlay() {
+    const videoEl = $('#inputVideo').get(0)
+
+    if (videoEl.paused || videoEl.ended || !isFaceDetectionModelLoaded())
+      return setTimeout(() => onPlay())
+
+
+    const options = getFaceDetectorOptions()
+
+    const ts = Date.now()
+
+    const result = await faceapi.detectSingleFace(videoEl, options)
+    if (result) {
+      const canvas = $('#overlay').get(0)
+      const dims = faceapi.matchDimensions(canvas, videoEl, true)
+      const resizedResult = faceapi.resizeResults(result, dims)
+      // faceapi.draw.drawDetections(canvas, resizedResult)
+      console.log("检测到了人脸！");
+      if (flag) {
+        faceapi.draw.drawDetections(canvas, resizedResult)
+      }
+    } else {
+      console.log('消失了')
+    }
+
+    setTimeout(() => onPlay())
+  }
+
+  async function run() {
+    // load face detection model
+    await changeFaceDetector(TINY_FACE_DETECTOR)
+    changeInputSize(128)
+
+    // try to access users webcam and stream the images
+    // to the video element
+    const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
+    const videoEl = $('#inputVideo').get(0)
+    videoEl.srcObject = stream
+  }
+
+  function updateResults() { }
+
+  $(document).ready(function () {
+    // renderNavBar('#navbar', 'webcam_face_detection')
+    initFaceDetectionControls()
+    run()
+  })
+</script>
+</body>
+
+</html>
