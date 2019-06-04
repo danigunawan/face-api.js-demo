@@ -5,16 +5,34 @@
   <script src="../dist/face-api.js"></script>
   <script src="../public/js/commons.js"></script>
   <script src="../public/js/faceDetectionControls.js"></script>
-  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script type="text/javascript" src="http://fedcdn.open.com.cn/fedcdn/vendor/jquery/1.11.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
   <style>
     video,
     canvas {
-      widows: 640px;
+      width: 640px;
       height: 480px;
       position: absolute;
       top: 0;
       left: 0;
+    }
+
+    p {
+      position: absolute;
+      left: 0;
+      right: 0;
+      margin: auto;
+    }
+
+    div {
+      position: absolute;
+      left: 640px;
+      z-index: 9999;
+    }
+
+    img {
+      width: 400px;
+      height: 400px;
     }
   </style>
 </head>
@@ -22,56 +40,72 @@
 <body>
   <video onloadedmetadata="onPlay(this)" id="inputVideo" autoplay muted></video>
   <canvas id="overlay"></canvas>
-</body>
-<script>
-  let flag = true; //是否显示人脸框
-  async function onPlay() {
-    const videoEl = $('#inputVideo').get(0)
+  <p></p>
+  <div>
+    <img src="" alt="">
+    <img src="" alt="">
+  </div>
+  <script>
+    let num = 0;  //
+    const flag = false; //是否显示人脸框
+    let descriptors = { desc1: null, desc2: null }  //人脸相似度匹配
+    async function onPlay(that) {
+      const options = getFaceDetectorOptions()
+      const result = await faceapi.detectSingleFace(that, options)
+      if (result) {
+        const canvas = $('#overlay').get(0)
+        const dims = faceapi.matchDimensions(canvas, that, true)
+        const resizedResult = faceapi.resizeResults(result, dims)
 
-    if (videoEl.paused || videoEl.ended || !isFaceDetectionModelLoaded())
-      return setTimeout(() => onPlay())
+        if (num === 0) {
+          num++;
+          let Imgcanvas = document.createElement("canvas");
+          Imgcanvas.width = that.videoWidth;
+          Imgcanvas.height = that.videoHeight;
+          Imgcanvas.getContext('2d').drawImage(that, result.box.x, result.box.y - 50, result.box.width, result.box.height + 50, 0, 0, Imgcanvas.width, Imgcanvas.height);
+          onSelectionChanged(Imgcanvas.toDataURL())
+        }
+        // $("img").eq(0).attr('src', Imgcanvas.toDataURL())
 
+        if (flag) {
+          faceapi.draw.drawDetections(canvas, resizedResult);
 
-    const options = getFaceDetectorOptions()
-
-    const ts = Date.now()
-
-    const result = await faceapi.detectSingleFace(videoEl, options)
-    if (result) {
-      const canvas = $('#overlay').get(0)
-      const dims = faceapi.matchDimensions(canvas, videoEl, true)
-      const resizedResult = faceapi.resizeResults(result, dims)
-      // faceapi.draw.drawDetections(canvas, resizedResult)
-      console.log("检测到了人脸！");
-      if (flag) {
-        faceapi.draw.drawDetections(canvas, resizedResult)
+        }
       }
-    } else {
-      console.log('消失了')
+
+      setTimeout(() => onPlay(that));
     }
-
-    setTimeout(() => onPlay())
-  }
-
-  async function run() {
-    // load face detection model
-    await changeFaceDetector(TINY_FACE_DETECTOR)
-    changeInputSize(128)
-
-    // try to access users webcam and stream the images
-    // to the video element
-    const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
-    const videoEl = $('#inputVideo').get(0)
-    videoEl.srcObject = stream
-  }
-
-  function updateResults() { }
-
-  $(document).ready(function () {
-    // renderNavBar('#navbar', 'webcam_face_detection')
-    initFaceDetectionControls()
-    run()
-  })
-</script>
+    async function onSelectionChanged(uri) {
+      const Img1 = await faceapi.fetchImage(uri)
+      descriptors.desc1 = await faceapi.computeFaceDescriptor(Img1)
+      let imgList = ["../public/img/1.jpg", '../public/img/2.jpg', '../public/img/3.jpg', '../public/img/4.jpg', '../public/img/5.jpg', '../public/img/6.jpg', '../public/img/3.png'];
+      for (let item of imgList) {
+        let input = await faceapi.fetchImage(item);
+        descriptors.desc2 = await faceapi.computeFaceDescriptor(input)
+        const distance = faceapi.round(
+          faceapi.euclideanDistance(descriptors.desc1, descriptors.desc2)
+        )
+        if (distance < 0.4) {
+          $("img").eq(1).attr('src', item)
+          break
+        } else {
+        }
+      }
+      num = 0;
+    }
+    async function run() {
+      await faceapi.loadFaceRecognitionModel()  //相似度匹配
+      await changeFaceDetector(TINY_FACE_DETECTOR)
+      changeInputSize(128)
+      const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
+      const video = $('#inputVideo').get(0)
+      video.srcObject = stream
+    }
+    $(document).ready(function () {
+      initFaceDetectionControls()
+      run()
+    })
+  </script>
+</body>
 
 </html>
