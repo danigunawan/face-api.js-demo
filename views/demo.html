@@ -6,7 +6,7 @@
   <script src="../public/js/commons.js"></script>
   <script src="../public/js/faceDetectionControls.js"></script>
   <script type="text/javascript" src="http://fedcdn.open.com.cn/fedcdn/vendor/jquery/1.11.1/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script> -->
   <style>
     video,
     canvas {
@@ -17,13 +17,6 @@
       left: 0;
     }
 
-    p {
-      position: absolute;
-      left: 0;
-      right: 0;
-      margin: auto;
-    }
-
     div {
       position: absolute;
       left: 640px;
@@ -31,8 +24,8 @@
     }
 
     img {
-      width: 400px;
-      height: 400px;
+      width: 200px;
+      height: 200px;
     }
   </style>
 </head>
@@ -40,37 +33,38 @@
 <body>
   <video onloadedmetadata="onPlay(this)" id="inputVideo" autoplay muted></video>
   <canvas id="overlay"></canvas>
-  <p></p>
   <div>
     <img src="" alt="">
     <img src="" alt="">
   </div>
   <script>
+
+
+    const value = 0.4;  //相似度阀值
     let num = 0;  //
-    const flag = false; //是否显示人脸框
+    const flag = true; //是否显示人脸框
     let descriptors = { desc1: null, desc2: null }  //人脸相似度匹配
     async function onPlay(that) {
       const options = getFaceDetectorOptions()
-      const result = await faceapi.detectSingleFace(that, options)
+      const result = await faceapi.detectSingleFace(that, options).withFaceExpressions()
       if (result) {
         const canvas = $('#overlay').get(0)
         const dims = faceapi.matchDimensions(canvas, that, true)
         const resizedResult = faceapi.resizeResults(result, dims)
-
         if (num === 0) {
           num++;
           let Imgcanvas = document.createElement("canvas");
           Imgcanvas.width = that.videoWidth;
           Imgcanvas.height = that.videoHeight;
-          Imgcanvas.getContext('2d').drawImage(that, result.box.x, result.box.y - 50, result.box.width, result.box.height + 50, 0, 0, Imgcanvas.width, Imgcanvas.height);
+          Imgcanvas.getContext('2d').drawImage(that, result.detection.box.x, result.detection.box.y - 50, result.detection.box.width, result.detection.box.height + 50, 0, 0, Imgcanvas.width, Imgcanvas.height);
           onSelectionChanged(Imgcanvas.toDataURL())
+          // $("img").eq(0).attr('src', Imgcanvas.toDataURL())
         }
-        // $("img").eq(0).attr('src', Imgcanvas.toDataURL())
-
         if (flag) {
           faceapi.draw.drawDetections(canvas, resizedResult);
-
         }
+        const minConfidence = 0.05
+        faceapi.draw.drawFaceExpressions(canvas, resizedResult, minConfidence) //表情识别
       }
 
       setTimeout(() => onPlay(that));
@@ -78,24 +72,25 @@
     async function onSelectionChanged(uri) {
       const Img1 = await faceapi.fetchImage(uri)
       descriptors.desc1 = await faceapi.computeFaceDescriptor(Img1)
-      let imgList = ["../public/img/1.jpg", '../public/img/2.jpg', '../public/img/3.jpg', '../public/img/4.jpg', '../public/img/5.jpg', '../public/img/6.jpg', '../public/img/3.png'];
+      let imgList = ["../public/img/1.jpg", '../public/img/2.jpg', '../public/img/3.jpg', '../public/img/4.jpg', '../public/img/5.jpg', '../public/img/6.jpg', '../public/img/3.png', '../public/img/7.png'];
       for (let item of imgList) {
         let input = await faceapi.fetchImage(item);
         descriptors.desc2 = await faceapi.computeFaceDescriptor(input)
         const distance = faceapi.round(
           faceapi.euclideanDistance(descriptors.desc1, descriptors.desc2)
         )
-        if (distance < 0.4) {
+        if (distance < value) {
           $("img").eq(1).attr('src', item)
           break
-        } else {
         }
       }
       num = 0;
     }
     async function run() {
-      await faceapi.loadFaceRecognitionModel()  //相似度匹配
-      await changeFaceDetector(TINY_FACE_DETECTOR)
+      await faceapi.loadFaceRecognitionModel('/weights')  //相似度匹配
+      // await faceapi.loadTinyFaceDetectorModel('/')
+      await changeFaceDetector(TINY_FACE_DETECTOR)  // 人脸检测
+      await faceapi.loadFaceExpressionModel('/weights') //表情识别
       changeInputSize(128)
       const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
       const video = $('#inputVideo').get(0)

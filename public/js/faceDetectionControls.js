@@ -47,7 +47,7 @@ function changeInputSize(size) {
 
   const inputSizeSelect = $('#inputSize')
   inputSizeSelect.val(inputSize)
-  inputSizeSelect.material_select()
+  // inputSizeSelect.material_select()
 }
 
 function onIncreaseScoreThreshold() {
@@ -89,21 +89,22 @@ function isFaceDetectionModelLoaded() {
 }
 
 async function changeFaceDetector(detector) {
-  ['#ssd_mobilenetv1_controls', '#tiny_face_detector_controls', '#mtcnn_controls']
-    .forEach(id => $(id).hide())
+  // ['#ssd_mobilenetv1_controls', '#tiny_face_detector_controls', '#mtcnn_controls']
+  //   .forEach(id => $(id).hide())
 
   selectedFaceDetector = detector
-  const faceDetectorSelect = $('#selectFaceDetector')
-  faceDetectorSelect.val(detector)
-  faceDetectorSelect.material_select()
+  // const faceDetectorSelect = $('#selectFaceDetector')
+  // faceDetectorSelect.val(detector)
+  // faceDetectorSelect.material_select()
 
-  $('#loader').show()
+  // $('#loader').show()
   if (!isFaceDetectionModelLoaded()) {
-    await getCurrentFaceDetectionNet().load('/')
+    console.log(getCurrentFaceDetectionNet())
+    await getCurrentFaceDetectionNet().load('/weights')
   }
 
-  $(`#${detector}_controls`).show()
-  $('#loader').hide()
+  // $(`#${detector}_controls`).show()
+  // $('#loader').hide()
 }
 
 async function onSelectedFaceDetectorChanged(e) {
@@ -117,10 +118,10 @@ function initFaceDetectionControls() {
   const faceDetectorSelect = $('#selectFaceDetector')
   faceDetectorSelect.val(selectedFaceDetector)
   faceDetectorSelect.on('change', onSelectedFaceDetectorChanged)
-  faceDetectorSelect.material_select()
+  // faceDetectorSelect.material_select()
 
   const inputSizeSelect = $('#inputSize')
   inputSizeSelect.val(inputSize)
   inputSizeSelect.on('change', onInputSizeChanged)
-  inputSizeSelect.material_select()
+  // inputSizeSelect.material_select()
 }

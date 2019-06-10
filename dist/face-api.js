@@ -1725,11 +1725,6 @@
                 .reduce(function (flat, arr) { return flat.concat(arr); }));
         };
         NeuralNetwork.prototype.load = function (weightsOrUrl) {
-            /**
-             *   by 张鹏
-             *   指定模型路径weights
-             * */
-            weightsOrUrl = '/weights'
             return __awaiter(this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
                     switch (_a.label) {
